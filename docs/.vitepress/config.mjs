@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "VitePress Demo",
   description: "A demo site built with VitePress and GitHub CI/CD",
-  base: '/github-pages-demo/',
+  base: '/project-site-demo/',
 
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
