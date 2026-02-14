@@ -1,0 +1,72 @@
+# 用于构建和部署 VitePress 站点到 GitHub Pages 的示例工作流
+#
+name: Deploy VitePress site to Pages
+
+on:
+  # 针对 `main` 分支推送时运行。如果你使用 `master` 分支作为默认分支，请改为 `master`
+  push:
+    branches: [main]
+
+  # 允许从 Actions 标签页手动运行此工作流
+  workflow_dispatch:
+
+# 设置 GITHUB_TOKEN 的权限以允许部署到 GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 仅允许一个并发部署，跳过在正在进行的部署和最新排队的部署之间排队的运行。
+# 但是，不要取消正在进行的运行，因为我们希望允许这些生产部署完成。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # 构建任务
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要此项
+
+      # - uses: pnpm/action-setup@v3 # 如果使用 pnpm，请取消注释此块
+      #   with:
+      #     version: 9
+
+      # - uses: oven-sh/setup-bun@v1 # 如果使用 Bun，请取消注释此块
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm # 如果使用 pnpm/yarn，请改为 pnpm / yarn
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Install dependencies
+        run: npm ci # 如果使用 pnpm/yarn，请改为 pnpm install / yarn install / bun install
+
+      - name: Build with VitePress
+        run: npm run docs:build # 如果使用 pnpm/yarn，请改为 pnpm docs:build / yarn docs:build / bun run docs:build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  # 部署任务
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
